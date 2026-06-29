@@ -14,6 +14,9 @@ $ErrorActionPreference = 'Stop'
 # Force TLS 1.2+ on Windows PowerShell 5.x (PowerShell 7+ ignores this).
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 
+# Bypass execution policy for THIS process only (does not modify the system-wide policy).
+try { Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force -ErrorAction Stop } catch { }
+
 $tmpRoot = Join-Path $env:TEMP ("Win11Debloat-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tmpRoot -Force | Out-Null
 $zip = Join-Path $tmpRoot "src.zip"
@@ -35,6 +38,9 @@ if (-not $srcDir) { throw "Could not locate extracted Win11Debloat directory und
 
 $scriptPath = Join-Path $srcDir.FullName "Win11Debloat.ps1"
 if (-not (Test-Path $scriptPath)) { throw "Win11Debloat.ps1 not found at $scriptPath" }
+
+# Strip Mark-of-the-Web (Zone.Identifier) on every extracted file so RemoteSigned policy accepts them.
+try { Get-ChildItem -Path $srcDir.FullName -Recurse -File | Unblock-File -ErrorAction SilentlyContinue } catch { }
 
 Write-Host "Launching Win11Debloat..." -ForegroundColor Green
 & $scriptPath @args
