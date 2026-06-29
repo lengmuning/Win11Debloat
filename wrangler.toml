@@ -1,4 +1,4 @@
-name = "win11debloat-mirror"
+name = "win11debloat"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
