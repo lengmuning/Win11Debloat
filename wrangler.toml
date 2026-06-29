@@ -1,0 +1,9 @@
+name = "win11debloat-mirror"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# 如果你绑了自定义域名，在 Cloudflare dashboard 里配 Route 即可
+# 也可以在这里直接声明：
+# routes = [
+#   { pattern = "debloat.example.com/*", custom_domain = true }
+# ]
