@@ -12,10 +12,7 @@ const BOOTSTRAP_TEMPLATE = `# Win11Debloat bootstrap (served from Cloudflare Wor
 $ErrorActionPreference = 'Stop'
 
 # Force TLS 1.2+ on Windows PowerShell 5.x (PowerShell 7+ ignores this).
-try {
-    [Net.ServicePointManager]::SecurityProtocol = `
-        [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-} catch { }
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 
 $tmpRoot = Join-Path $env:TEMP ("Win11Debloat-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tmpRoot -Force | Out-Null
