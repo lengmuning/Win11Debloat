@@ -3,11 +3,19 @@ const BRANCH = "master";
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
 const ZIP_URL = `https://codeload.github.com/${REPO}/zip/refs/heads/${BRANCH}`;
 
-const BOOTSTRAP = `# Win11Debloat bootstrap (served from Cloudflare Worker)
+const BOOTSTRAP_TEMPLATE = `# Win11Debloat bootstrap (served from Cloudflare Worker)
 # Downloads the full repository to a temp dir and runs Win11Debloat.ps1 from there,
 # because the script depends on sibling files (Config/, Scripts/, Regfiles/, Assets/).
+# The zip is fetched via the same Worker origin so the entire chain stays on Cloudflare
+# (avoids direct GitHub access being throttled/blocked on some networks).
 
 $ErrorActionPreference = 'Stop'
+
+# Force TLS 1.2+ on Windows PowerShell 5.x (PowerShell 7+ ignores this).
+try {
+    [Net.ServicePointManager]::SecurityProtocol = `
+        [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+} catch { }
 
 $tmpRoot = Join-Path $env:TEMP ("Win11Debloat-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tmpRoot -Force | Out-Null
@@ -17,7 +25,7 @@ Write-Host "Downloading Win11Debloat..." -ForegroundColor Cyan
 try {
     $oldProgress = $ProgressPreference
     $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri "${ZIP_URL}" -OutFile $zip -UseBasicParsing
+    Invoke-WebRequest -Uri "__ZIP_URL__" -OutFile $zip -UseBasicParsing
 } finally {
     $ProgressPreference = $oldProgress
 }
@@ -45,7 +53,9 @@ export default {
 
     // Default: serve the bootstrap that downloads the full repo and runs the real script.
     if (url.pathname === "/" || url.pathname === "/bootstrap.ps1") {
-      return new Response(BOOTSTRAP, {
+      const zipUrl = `${url.origin}/zip`;
+      const body = BOOTSTRAP_TEMPLATE.replace("__ZIP_URL__", zipUrl);
+      return new Response(body, {
         headers: {
           "content-type": "text/plain; charset=utf-8",
           "cache-control": "public, max-age=300",
